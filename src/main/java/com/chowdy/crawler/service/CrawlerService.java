@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 @Service
 public class CrawlerService {
 
-    private static final Pattern PRODUCT_URL_PATTERN = Pattern.compile(".*/(product|item|p)/.*", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PRODUCT_URL_PATTERN = Pattern.compile(".*(/product/|/item/|/p/).*", Pattern.CASE_INSENSITIVE);
 
     @Value("${crawler.max-depth}")
     private int maxDepth;
@@ -55,11 +55,14 @@ public class CrawlerService {
             Document doc = Jsoup.connect(currentUrl).timeout(timeout).get();
             Elements links = doc.select("a[href]");
 
+
             for (Element link : links) {
+
                 String href = link.absUrl("href");
 
-                if (isProductUrl(href)) {
+                if (isValidUrl(href) && isProductUrl(href)) {
                     productUrls.add(href);
+
                 } else if (isSameDomain(baseDomain, href)) {
                     crawlDomain(baseDomain, href, depth + 1, productUrls);
                 }
@@ -75,6 +78,14 @@ public class CrawlerService {
 
     private boolean isSameDomain(String baseDomain, String url) {
         return url.startsWith(baseDomain);
+    }
+
+    private boolean isValidUrl(String url) {
+        // Filter out invalid URLs
+        return url != null && !url.isEmpty() &&
+                !url.startsWith("javascript:") &&
+                !url.contains("void") &&
+                !url.equals("#");
     }
 }
 
